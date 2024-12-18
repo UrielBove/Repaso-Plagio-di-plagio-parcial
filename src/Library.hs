@@ -90,8 +90,43 @@ bot2 = UnBot [copiaLiteral, cantIgualDeElementos] "botazo"
 --5
 
 detectarPlagio :: Bot -> Obra -> Obra -> Bool
-detectarPlagio bot obra1 obra2 = any (verificaFormaDeDeteccion obra1 obra2)  (formasDePlagio bot)
+detectarPlagio bot obra1 obraOriginal = any (verificaFormaDeDeteccion obra1 obraOriginal)  (formasDePlagio bot)
 
 verificaFormaDeDeteccion :: Obra -> Obra -> FormaDeDeteccion -> Bool
-verificaFormaDeDeteccion obraOriginal obra2 formaDeDeteccion = anioPublicacion obraOriginal < anioPublicacion obra2 && formaDeDeteccion obraOriginal obra2
+verificaFormaDeDeteccion obra1 obraOriginal formaDeDeteccion = anioPublicacion obra1 > anioPublicacion obraOriginal && formaDeDeteccion obra1 obraOriginal
 
+--6
+
+esCadenaDePlagiadores :: [Autor] -> Bot -> Bool
+esCadenaDePlagiadores [] _ = False
+esCadenaDePlagiadores [a,b] bot = autorPlagioAOtroAutor bot a b 
+esCadenaDePlagiadores (a1:a2:as) bot = autorPlagioAOtroAutor bot a1 a2  && esCadenaDePlagiadores (a2:as) bot
+
+esPlagioDeEsteAutor :: Bot -> Autor -> Obra -> Bool
+esPlagioDeEsteAutor bot autorOriginal obra = any(detectarPlagio bot obra )(obras autorOriginal)
+
+autorPlagioAOtroAutor :: Bot -> Autor -> Autor -> Bool
+autorPlagioAOtroAutor bot autor autorOriginal = any (esPlagioDeEsteAutor bot autorOriginal) (obras autor)
+
+--7
+
+hicieronPlagioPeroAprendieron :: Bot -> [Autor] -> [Autor]
+hicieronPlagioPeroAprendieron bot autores = filter (\autor -> aprendio bot autor (quitar autor autores)) autores
+    where quitar x = filter(/= x)
+
+aprendio :: Bot -> Autor -> [Autor] -> Bool
+aprendio bot autor autores = length (obrasPlagiadasDeAutor bot autor autores) == 1
+
+obrasPlagiadasDeAutor :: Bot -> Autor -> [Autor] -> [Obra]
+obrasPlagiadasDeAutor bot autor1 autores = filter(obraPlagioAAutores bot autores) (obras autor1)
+
+obraPlagioAAutores :: Bot -> [Autor] -> Obra -> Bool
+obraPlagioAAutores bot autores obra = any(\autor -> esPlagioDeEsteAutor bot autor obra)autores
+
+--8 
+
+obraInfinita :: Obra
+obraInfinita = UnaObra (repeat 'a') 1920
+
+obraInfinita2 :: Obra
+obraInfinita2 = UnaObra (repeat 'a') 2010
